@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        tools:context=".fragments.StreamingFragment">
+
+        <ImageView
+            android:id="@+id/streamView"
+            android:layout_width="300dp"
+            android:layout_height="300dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="4dp"
+            android:scaleType="fitXY"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:srcCompat="@tools:sample/avatars" />
+
+        <ImageView
+            android:id="@+id/iconTempRange"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toEndOf="@+id/iconNuc"
+            app:layout_constraintTop_toBottomOf="@+id/textView2"
+            app:srcCompat="@drawable/ic_settings_temperature"
+            tools:srcCompat="@drawable/ic_settings_temperature" />
+
+        <ImageView
+            android:id="@+id/iconChangeSsid"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toEndOf="@+id/iconTempRange"
+            app:layout_constraintTop_toBottomOf="@+id/textView2"
+            app:srcCompat="@drawable/baseline_wifi_password_black_24"
+            tools:srcCompat="@drawable/baseline_wifi_password_black_24" />
+
+        <ImageView
+            android:id="@+id/iconNuc"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView2"
+            app:srcCompat="@drawable/ic_camera_alt_black_24dp"
+            tools:srcCompat="@drawable/ic_camera_alt_black_24dp" />
+
+        <ImageView
+            android:id="@+id/iconColorDistribution"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toEndOf="@+id/iconMeasurements"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:srcCompat="@drawable/baseline_color_lens_black_24"
+            tools:srcCompat="@drawable/baseline_color_lens_black_24" />
+
+        <ImageView
+            android:id="@+id/iconMeasurements"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toEndOf="@+id/iconEmissivity"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:srcCompat="@drawable/baseline_data_saver_on_black_24"
+            tools:srcCompat="@drawable/baseline_data_saver_on_black_24" />
+
+        <ImageView
+            android:id="@+id/iconEmissivity"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toEndOf="@+id/iconFusionMode"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:srcCompat="@drawable/ic_settings_emissivity"
+            tools:srcCompat="@drawable/ic_settings_emissivity" />
+
+        <ImageView
+            android:id="@+id/iconPalette"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:srcCompat="@drawable/ic_palette_iron_normal"
+            tools:srcCompat="@drawable/ic_palette_iron_normal" />
+
+        <ImageView
+            android:id="@+id/iconFusionMode"
+            style="@style/BottomIconStyle"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toEndOf="@+id/iconPalette"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:srcCompat="@drawable/baseline_gradient_black_24"
+            tools:srcCompat="@drawable/baseline_gradient_black_24" />
+
+        <ImageView
+            android:id="@+id/iconSave"
+            android:layout_width="@dimen/BottomIconSize"
+            android:layout_height="@dimen/BottomIconSize"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:src="@drawable/baseline_save_black_24"
+            app:layout_constraintStart_toEndOf="@+id/iconColorDistribution"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            tools:srcCompat="@drawable/baseline_save_black_24" />
+
+        <ImageView
+            android:id="@+id/scaleView"
+            android:layout_width="10dp"
+            android:layout_height="300dp"
+            android:layout_marginStart="4dp"
+            android:scaleType="fitXY"
+            app:layout_constraintBottom_toBottomOf="@+id/streamView"
+            app:layout_constraintStart_toEndOf="@+id/streamView"
+            app:layout_constraintTop_toTopOf="@+id/streamView"
+            app:srcCompat="@drawable/ic_launcher_background" />
+
+        <TextView
+            android:id="@+id/scaleTempMax"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="20.0 C"
+            app:layout_constraintStart_toEndOf="@+id/scaleView"
+            app:layout_constraintTop_toTopOf="@+id/streamView" />
+
+        <TextView
+            android:id="@+id/scaleTempMin"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0.0 C"
+            app:layout_constraintBottom_toBottomOf="@+id/streamView"
+            app:layout_constraintStart_toEndOf="@+id/scaleView" />
+
+        <TextView
+            android:id="@+id/status"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Status"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/switchConnection" />
+
+        <TextView
+            android:id="@+id/spotInfo"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Spot info"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/bleSignal" />
+
+        <TextView
+            android:id="@+id/textView"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Streaming options:"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/streamView" />
+
+        <TextView
+            android:id="@+id/textView2"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Camera settings:"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/iconPalette" />
+
+        <TextView
+            android:id="@+id/extendedStatus"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Extended status"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/status" />
+
+        <TextView
+            android:id="@+id/lastOperationResult"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Last operation status"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/extendedStatus" />
+
+        <TextView
+            android:id="@+id/bleSignal"
+            style="@style/BlackLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Signal strength"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lastOperationResult" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchConnection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:text="Connection status"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/iconNuc" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
