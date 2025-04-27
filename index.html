@@ -336,7 +336,48 @@
       downloadThermal2Btn.disabled = false;
       redrawThermalCanvas();
     });
-    
+    // 手機熱影像觸控
+canvasThermal.addEventListener('touchstart', (event) => {
+  event.preventDefault();
+  const rect = canvasThermal.getBoundingClientRect();
+  const touch = event.touches[0];
+  thermalStartX = touch.clientX - rect.left;
+  thermalStartY = touch.clientY - rect.top;
+  isDraggingThermal = true;
+});
+
+canvasThermal.addEventListener('touchmove', (event) => {
+  event.preventDefault();
+  if (!isDraggingThermal) return;
+  const rect = canvasThermal.getBoundingClientRect();
+  const touch = event.touches[0];
+  thermalCurrentX = touch.clientX - rect.left;
+  thermalCurrentY = touch.clientY - rect.top;
+  ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
+  ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
+  if (thermalRegion1) drawRectByRegion(ctxThermal, thermalRegion1, canvasThermal, thermalImage, 'blue');
+  if (thermalRegion2) drawRectByRegion(ctxThermal, thermalRegion2, canvasThermal, thermalImage, 'green');
+  let x1 = Math.min(thermalStartX, thermalCurrentX);
+  let y1 = Math.min(thermalStartY, thermalCurrentY);
+  let w = Math.abs(thermalCurrentX - thermalStartX);
+  let h = Math.abs(thermalCurrentY - thermalStartY);
+  drawRect(ctxThermal, x1, y1, w, h, 'red', 'dashed');
+  const scaleX = thermalImage.width / canvasThermal.width;
+  const scaleY = thermalImage.height / canvasThermal.height;
+  thermalTempRegion = {
+    x1: x1 * scaleX,
+    y1: y1 * scaleY,
+    x2: (x1 + w) * scaleX,
+    y2: (y1 + h) * scaleY
+  };
+  currentCoordsThermalDiv.innerText = `目前選取：(${thermalTempRegion.x1.toFixed(0)}, ${thermalTempRegion.y1.toFixed(0)}) ~ (${thermalTempRegion.x2.toFixed(0)}, ${thermalTempRegion.y2.toFixed(0)})`;
+});
+
+canvasThermal.addEventListener('touchend', (event) => {
+  event.preventDefault();
+  isDraggingThermal = false;
+});
+
     // 可見光區域選取
     canvasNormal.addEventListener('mousedown', (event) => {
       const rect = canvasNormal.getBoundingClientRect();
@@ -385,7 +426,48 @@
       downloadNormal1Btn.disabled = false;
       redrawNormalCanvas();
     });
-    
+   // 手機可見光觸控
+canvasNormal.addEventListener('touchstart', (event) => {
+  event.preventDefault();
+  const rect = canvasNormal.getBoundingClientRect();
+  const touch = event.touches[0];
+  visibleStartX = touch.clientX - rect.left;
+  visibleStartY = touch.clientY - rect.top;
+  isDraggingVisible = true;
+});
+
+canvasNormal.addEventListener('touchmove', (event) => {
+  event.preventDefault();
+  if (!isDraggingVisible) return;
+  const rect = canvasNormal.getBoundingClientRect();
+  const touch = event.touches[0];
+  visibleCurrentX = touch.clientX - rect.left;
+  visibleCurrentY = touch.clientY - rect.top;
+  ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
+  ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
+  if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
+  if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
+  let x1 = Math.min(visibleStartX, visibleCurrentX);
+  let y1 = Math.min(visibleStartY, visibleCurrentY);
+  let w = Math.abs(visibleCurrentX - visibleStartX);
+  let h = Math.abs(visibleCurrentY - visibleStartY);
+  drawRect(ctxNormal, x1, y1, w, h, 'red', 'dashed');
+  const scaleX = visibleImage.width / canvasNormal.width;
+  const scaleY = visibleImage.height / canvasNormal.height;
+  visibleTempRegion = {
+    x1: x1 * scaleX,
+    y1: y1 * scaleY,
+    x2: (x1 + w) * scaleX,
+    y2: (y1 + h) * scaleY
+  };
+  currentCoordsNormalDiv.innerText = `目前選取：(${visibleTempRegion.x1.toFixed(0)}, ${visibleTempRegion.y1.toFixed(0)}) ~ (${visibleTempRegion.x2.toFixed(0)}, ${visibleTempRegion.y2.toFixed(0)})`;
+});
+
+canvasNormal.addEventListener('touchend', (event) => {
+  event.preventDefault();
+  isDraggingVisible = false;
+});
+ 
     confirmNormalRegion2Btn.addEventListener('click', () => {
       if (!visibleTempRegion) {
         alert("請先框選 Control 區域");
