@@ -199,14 +199,14 @@
     }
     
     function drawRectByRegion(ctx, region, displayCanvas, sourceImage, color) {
-      const scaleX = displayCanvas.width / sourceImage.width;
-      const scaleY = displayCanvas.height / sourceImage.height;
-      const x = region.x1 * scaleX;
-      const y = region.y1 * scaleY;
-      const w = (region.x2 - region.x1) * scaleX;
-      const h = (region.y2 - region.y1) * scaleY;
-      drawRect(ctx, x, y, w, h, color, 'solid');
-    }
+  // region 已經是 canvas 座標，直接畫
+  const x = region.x1;
+  const y = region.y1;
+  const w = region.x2 - region.x1;
+  const h = region.y2 - region.y1;
+  drawRect(ctx, x, y, w, h, color, 'solid');
+}
+
     
     function redrawThermalCanvas() {
       ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
@@ -277,36 +277,42 @@
     
     // 熱影像區域選取
     canvasThermal.addEventListener('mousedown', (event) => {
-      const rect = canvasThermal.getBoundingClientRect();
-      thermalStartX = event.clientX - rect.left;
-      thermalStartY = event.clientY - rect.top;
-      isDraggingThermal = true;
-    });
-    
-    canvasThermal.addEventListener('mousemove', (event) => {
-      if (!isDraggingThermal) return;
-      const rect = canvasThermal.getBoundingClientRect();
-      thermalCurrentX = event.clientX - rect.left;
-      thermalCurrentY = event.clientY - rect.top;
-      ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
-      ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
-      if (thermalRegion1) drawRectByRegion(ctxThermal, thermalRegion1, canvasThermal, thermalImage, 'blue');
-      if (thermalRegion2) drawRectByRegion(ctxThermal, thermalRegion2, canvasThermal, thermalImage, 'green');
-      let x1 = Math.min(thermalStartX, thermalCurrentX);
-      let y1 = Math.min(thermalStartY, thermalCurrentY);
-      let w = Math.abs(thermalCurrentX - thermalStartX);
-      let h = Math.abs(thermalCurrentY - thermalStartY);
-      drawRect(ctxThermal, x1, y1, w, h, 'red', 'dashed');
-      const scaleX = thermalImage.width / canvasThermal.width;
-      const scaleY = thermalImage.height / canvasThermal.height;
-      thermalTempRegion = {
-        x1: x1 * scaleX,
-        y1: y1 * scaleY,
-        x2: (x1 + w) * scaleX,
-        y2: (y1 + h) * scaleY
-      };
-      currentCoordsThermalDiv.innerText = `目前選取：(${thermalTempRegion.x1.toFixed(0)}, ${thermalTempRegion.y1.toFixed(0)}) ~ (${thermalTempRegion.x2.toFixed(0)}, ${thermalTempRegion.y2.toFixed(0)})`;
-    });
+  const rect = canvasThermal.getBoundingClientRect();
+  const scaleX = canvasThermal.width / rect.width;
+  const scaleY = canvasThermal.height / rect.height;
+  thermalStartX = (event.clientX - rect.left) * scaleX;
+  thermalStartY = (event.clientY - rect.top) * scaleY;
+  isDraggingThermal = true;
+});
+
+canvasThermal.addEventListener('mousemove', (event) => {
+  if (!isDraggingThermal) return;
+  const rect = canvasThermal.getBoundingClientRect();
+  const scaleX = canvasThermal.width / rect.width;
+  const scaleY = canvasThermal.height / rect.height;
+  thermalCurrentX = (event.clientX - rect.left) * scaleX;
+  thermalCurrentY = (event.clientY - rect.top) * scaleY;
+
+  ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
+  ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
+  if (thermalRegion1) drawRectByRegion(ctxThermal, thermalRegion1, canvasThermal, thermalImage, 'blue');
+  if (thermalRegion2) drawRectByRegion(ctxThermal, thermalRegion2, canvasThermal, thermalImage, 'green');
+
+  let x1 = Math.min(thermalStartX, thermalCurrentX);
+  let y1 = Math.min(thermalStartY, thermalCurrentY);
+  let w = Math.abs(thermalCurrentX - thermalStartX);
+  let h = Math.abs(thermalCurrentY - thermalStartY);
+  drawRect(ctxThermal, x1, y1, w, h, 'red', 'dashed');
+
+  thermalTempRegion = {
+    x1: x1,
+    y1: y1,
+    x2: x1 + w,
+    y2: y1 + h
+  };
+  currentCoordsThermalDiv.innerText = `目前選取：(${x1.toFixed(0)}, ${y1.toFixed(0)}) ~ (${(x1 + w).toFixed(0)}, ${(y1 + h).toFixed(0)})`;
+});
+
     
     canvasThermal.addEventListener('mouseup', () => { isDraggingThermal = false; });
     canvasThermal.addEventListener('mouseleave', () => { if (isDraggingThermal) isDraggingThermal = false; });
@@ -380,36 +386,42 @@ canvasThermal.addEventListener('touchend', (event) => {
 
     // 可見光區域選取
     canvasNormal.addEventListener('mousedown', (event) => {
-      const rect = canvasNormal.getBoundingClientRect();
-      visibleStartX = event.clientX - rect.left;
-      visibleStartY = event.clientY - rect.top;
-      isDraggingVisible = true;
-    });
-    
-    canvasNormal.addEventListener('mousemove', (event) => {
-      if (!isDraggingVisible) return;
-      const rect = canvasNormal.getBoundingClientRect();
-      visibleCurrentX = event.clientX - rect.left;
-      visibleCurrentY = event.clientY - rect.top;
-      ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
-      ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
-      if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
-      if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
-      let x1 = Math.min(visibleStartX, visibleCurrentX);
-      let y1 = Math.min(visibleStartY, visibleCurrentY);
-      let w = Math.abs(visibleCurrentX - visibleStartX);
-      let h = Math.abs(visibleCurrentY - visibleStartY);
-      drawRect(ctxNormal, x1, y1, w, h, 'red', 'dashed');
-      const scaleX = visibleImage.width / canvasNormal.width;
-      const scaleY = visibleImage.height / canvasNormal.height;
-      visibleTempRegion = {
-        x1: x1 * scaleX,
-        y1: y1 * scaleY,
-        x2: (x1 + w) * scaleX,
-        y2: (y1 + h) * scaleY
-      };
-      currentCoordsNormalDiv.innerText = `目前選取：(${visibleTempRegion.x1.toFixed(0)}, ${visibleTempRegion.y1.toFixed(0)}) ~ (${visibleTempRegion.x2.toFixed(0)}, ${visibleTempRegion.y2.toFixed(0)})`;
-    });
+  const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
+  visibleStartX = (event.clientX - rect.left) * scaleX;
+  visibleStartY = (event.clientY - rect.top) * scaleY;
+  isDraggingVisible = true;
+});
+
+canvasNormal.addEventListener('mousemove', (event) => {
+  if (!isDraggingVisible) return;
+  const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
+  visibleCurrentX = (event.clientX - rect.left) * scaleX;
+  visibleCurrentY = (event.clientY - rect.top) * scaleY;
+
+  ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
+  ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
+  if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
+  if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
+
+  let x1 = Math.min(visibleStartX, visibleCurrentX);
+  let y1 = Math.min(visibleStartY, visibleCurrentY);
+  let w = Math.abs(visibleCurrentX - visibleStartX);
+  let h = Math.abs(visibleCurrentY - visibleStartY);
+  drawRect(ctxNormal, x1, y1, w, h, 'red', 'dashed');
+
+  visibleTempRegion = {
+    x1: x1,
+    y1: y1,
+    x2: x1 + w,
+    y2: y1 + h
+  };
+  currentCoordsNormalDiv.innerText = `目前選取：(${x1.toFixed(0)}, ${y1.toFixed(0)}) ~ (${(x1 + w).toFixed(0)}, ${(y1 + h).toFixed(0)})`;
+});
+
     
     canvasNormal.addEventListener('mouseup', () => { isDraggingVisible = false; });
     canvasNormal.addEventListener('mouseleave', () => { if (isDraggingVisible) isDraggingVisible = false; });
@@ -427,12 +439,14 @@ canvasThermal.addEventListener('touchend', (event) => {
       redrawNormalCanvas();
     });
    // 手機可見光觸控
-canvasNormal.addEventListener('touchstart', (event) => {
+   canvasNormal.addEventListener('touchstart', (event) => {
   event.preventDefault();
   const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
   const touch = event.touches[0];
-  visibleStartX = touch.clientX - rect.left;
-  visibleStartY = touch.clientY - rect.top;
+  visibleStartX = (touch.clientX - rect.left) * scaleX;
+  visibleStartY = (touch.clientY - rect.top) * scaleY;
   isDraggingVisible = true;
 });
 
@@ -440,28 +454,32 @@ canvasNormal.addEventListener('touchmove', (event) => {
   event.preventDefault();
   if (!isDraggingVisible) return;
   const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
   const touch = event.touches[0];
-  visibleCurrentX = touch.clientX - rect.left;
-  visibleCurrentY = touch.clientY - rect.top;
+  visibleCurrentX = (touch.clientX - rect.left) * scaleX;
+  visibleCurrentY = (touch.clientY - rect.top) * scaleY;
+
   ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
   ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
   if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
   if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
+
   let x1 = Math.min(visibleStartX, visibleCurrentX);
   let y1 = Math.min(visibleStartY, visibleCurrentY);
   let w = Math.abs(visibleCurrentX - visibleStartX);
   let h = Math.abs(visibleCurrentY - visibleStartY);
   drawRect(ctxNormal, x1, y1, w, h, 'red', 'dashed');
-  const scaleX = visibleImage.width / canvasNormal.width;
-  const scaleY = visibleImage.height / canvasNormal.height;
+
   visibleTempRegion = {
-    x1: x1 * scaleX,
-    y1: y1 * scaleY,
-    x2: (x1 + w) * scaleX,
-    y2: (y1 + h) * scaleY
+    x1: x1,
+    y1: y1,
+    x2: x1 + w,
+    y2: y1 + h
   };
-  currentCoordsNormalDiv.innerText = `目前選取：(${visibleTempRegion.x1.toFixed(0)}, ${visibleTempRegion.y1.toFixed(0)}) ~ (${visibleTempRegion.x2.toFixed(0)}, ${visibleTempRegion.y2.toFixed(0)})`;
+  currentCoordsNormalDiv.innerText = `目前選取：(${x1.toFixed(0)}, ${y1.toFixed(0)}) ~ (${(x1 + w).toFixed(0)}, ${(y1 + h).toFixed(0)})`;
 });
+
 
 canvasNormal.addEventListener('touchend', (event) => {
   event.preventDefault();
@@ -519,53 +537,47 @@ canvasNormal.addEventListener('touchend', (event) => {
         return response.json();
       })
       .then(data => {
-        if (data.error) {
-          alert("分析失敗：" + data.error);
-        } else {
-          let resultHTML = `
-            <div class="analysis-summary">
-              <h3>基本結果</h3>
-              <ul>
-                <li><strong>Flap RGB:</strong> R: ${data.flap_rgb[0].toFixed(2)}, G: ${data.flap_rgb[1].toFixed(2)}, B: ${data.flap_rgb[2].toFixed(2)}</li>
-                <li><strong>Control RGB:</strong> R: ${data.control_rgb[0].toFixed(2)}, G: ${data.control_rgb[1].toFixed(2)}, B: ${data.control_rgb[2].toFixed(2)}</li>
-                <li><strong>RGB 差異:</strong> R: ${data.rgb_diff[0].toFixed(2)}, G: ${data.rgb_diff[1].toFixed(2)}, B: ${data.rgb_diff[2].toFixed(2)}</li>
-                <li><strong>Flap Temperature:</strong> ${data.flapTemp} °C</li>
-                <li><strong>Control Temperature:</strong> ${data.controlTemp} °C</li>
-                <li><strong>溫差:</strong> ${data.temp_diff} °C</li>
-              </ul>
-            </div>
-            <div class="analysis-model">
-              <h3>模型預測結果</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>模型</th>
-                    <th>預測結果</th>
-                    <th>Normal Flap</th>
-                    <th>Arterial insufficiency</th>
-                    <th>Venous insufficiency</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-          for (let group in data.predictions) {
-            resultHTML += `
-                  <tr>
-                    <td>${group}</td>
-                    <td>${data.predictions[group]}</td>
-                    <td>${data.model_probabilities[group]['Normal Flap']}</td>
-                    <td>${data.model_probabilities[group]['Arterial insufficiency']}</td>
-                    <td>${data.model_probabilities[group]['Venous insufficiency']}</td>
-                  </tr>
-            `;
-          }
-          resultHTML += `
-                </tbody>
-              </table>
-            </div>
-          `;
-          document.getElementById('result').innerHTML = resultHTML;
-        }
+  if (data.error) {
+    alert("分析失敗：" + data.error);
+  } else {
+    let resultHTML = `
+      <div class="analysis-summary">
+        <h3>基本結果</h3>
+        <ul>
+          <li><strong>Flap RGB:</strong> R: ${data.flap_rgb[0].toFixed(2)}, G: ${data.flap_rgb[1].toFixed(2)}, B: ${data.flap_rgb[2].toFixed(2)}</li>
+          <li><strong>Flap Temperature:</strong> ${data.flapTemp} °C</li>
+          <li><strong>Control Temperature:</strong> ${data.controlTemp} °C</li>
+          <li><strong>預測結果:</strong> ${data.prediction}</li>
+        </ul>
+      </div>
+      <div class="analysis-model">
+        <h3>RF2 模型機率分布</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>分類</th>
+              <th>機率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Normal Flap</td>
+              <td>${data.probabilities["Normal Flap"]}</td>
+            </tr>
+            <tr>
+              <td>Arterial insufficiency</td>
+              <td>${data.probabilities["Arterial insufficiency"]}</td>
+            </tr>
+            <tr>
+              <td>Venous insufficiency</td>
+              <td>${data.probabilities["Venous insufficiency"]}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    document.getElementById('result').innerHTML = resultHTML;
+  }
         // 保持圖片不重置
         if (window.lastVisibleImageDataUrl) {
           visibleImage.src = window.lastVisibleImageDataUrl;
