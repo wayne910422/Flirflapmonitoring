@@ -16,8 +16,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 儲存目錄與資料庫（儲存功能用）
-BASE_DIR = "C:/xampp/htdocs/thermal_image_web/uploads/"
-DB_PATH = "results.db"
+BASE_DIR = "/home/ec2-user/gdrive1/uploads/"
+DB_PATH = "/home/ec2-user/gdrive1/results.db"
 
 def ensure_directory_exists(path):
     try:
@@ -213,7 +213,7 @@ def save_label():
     valid_labels = ["正常皮膚", "缺血性皮膚", "瘀血性皮膚"]
     if skinLabel not in valid_labels:
         return jsonify({"error": "無效的皮膚 Label 值"}), 400
-    target_dir = os.path.join(r"C:\xampp\htdocs\thermal_image_web", skinLabel)
+    target_dir = os.path.join(r"/home/ec2-user/gdrive1/uploads", skinLabel)
     os.makedirs(target_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     filename = f"{patientID}_{timestamp}_{skinLabel}.jpg"
@@ -241,7 +241,7 @@ def save_visible():
     valid_labels = ["正常皮膚", "缺血性皮膚", "瘀血性皮膚"]
     if skinLabel not in valid_labels:
         return jsonify({"error": "無效的皮膚 Label 值"}), 400
-    target_dir = os.path.join(r"C:\xampp\htdocs\thermal_image_web", skinLabel)
+    target_dir = os.path.join(r"/home/ec2-user/gdrive1/uploads", skinLabel)
     os.makedirs(target_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     filename = f"{patientID}_{timestamp}_{skinLabel}.jpg"
@@ -261,7 +261,7 @@ def save_visible():
 
 @app.route('/download_region', methods=['GET'])
 def download_region():
-    
+
     try:
         region_type = request.args.get('type', '').lower()
         region_num = int(request.args.get('region', '1'))
