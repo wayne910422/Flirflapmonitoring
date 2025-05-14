@@ -526,7 +526,7 @@ canvasNormal.addEventListener('touchend', (event) => {
         formData.append('visibleImage', visibleFileInput.files[0]);
       }
     
-      fetch("http://34.207.117.32:5000/upload", {
+      fetch("https://34.207.117.32:5000/upload", {
         method: "POST",
         body: formData
       })
@@ -615,7 +615,7 @@ canvasNormal.addEventListener('touchend', (event) => {
         formData.append('visibleImage', visibleFileInput.files[0]);
       }
       
-      fetch("http://34.207.117.32:5000/save_label", {
+      fetch("https://34.207.117.32:5000/save_label", {
         method: "POST",
         mode: "cors",
         body: formData
@@ -655,7 +655,7 @@ canvasNormal.addEventListener('touchend', (event) => {
       formData.append('skinLabel', skinLabel);
       formData.append('visibleImage', visibleFileInput.files[0]);
   
-      fetch("http://34.207.117.32:5000/save_visible", {
+      fetch("https://34.207.117.32:5000/save_visible", {
         method: "POST",
         mode: "cors",
         body: formData
@@ -680,7 +680,7 @@ canvasNormal.addEventListener('touchend', (event) => {
         alert("請先確認熱影像區域1");
         return;
       }
-      fetch(`http://34.207.117.32:5000/download_region?type=thermal&region=1`, {
+      fetch(`https://34.207.117.32:5000/download_region?type=thermal&region=1`, {
         method: "GET"
       })
       .then(response => response.blob())
@@ -699,7 +699,7 @@ canvasNormal.addEventListener('touchend', (event) => {
         alert("請先確認熱影像區域2");
         return;
       }
-      fetch(`http://34.207.117.32:5000/download_region?type=thermal&region=2`, {
+      fetch(`https://34.207.117.32:5000/download_region?type=thermal&region=2`, {
         method: "GET"
       })
       .then(response => response.blob())
@@ -718,7 +718,7 @@ canvasNormal.addEventListener('touchend', (event) => {
         alert("請先確認 Flap 區域");
         return;
       }
-      fetch(`http://34.207.117.32:5000/download_region?type=visible&region=1`, {
+      fetch(`https://34.207.117.32:5000/download_region?type=visible&region=1`, {
         method: "GET"
       })
       .then(response => response.blob())
@@ -737,7 +737,7 @@ canvasNormal.addEventListener('touchend', (event) => {
         alert("請先確認 Control 區域");
         return;
       }
-      fetch(`http://34.207.117.32:5000/download_region?type=visible&region=2`, {
+      fetch(`https://34.207.117.32:5000/download_region?type=visible&region=2`, {
         method: "GET"
       })
       .then(response => response.blob())
