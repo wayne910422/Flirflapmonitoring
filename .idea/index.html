@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>皮瓣血循分析工具</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <style>
+    /* 全域樣式設定 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f7f7f7; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input[type="text"], select, input[type="file"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .upload-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .upload-group > div { flex: 1; min-width: 250px; }
+    button { background: #3498db; color: #fff; border: none; padding: 10px 20px; margin: 10px 5px; border-radius: 4px; cursor: pointer; transition: background 0.3s; }
+    button:hover { background: #2980b9; }
+    .image-comparison { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+    .image-block { flex: 1; min-width: 300px; background: #ecf0f1; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .image-block h3 { text-align: center; margin-bottom: 10px; color: #34495e; }
+    canvas { width: 100%; max-height: 400px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; margin-bottom: 10px; display: block; }
+    .coords { text-align: center; font-size: 14px; margin-bottom: 10px; }
+    .confirm-buttons { text-align: center; margin-bottom: 10px; }
+    .download-buttons { text-align: center; margin-top: 10px; }
+    .result-box { background: #ecf0f1; border-radius: 4px; padding: 10px; text-align: left; margin-top: 20px; font-size: 16px; }
+    .confirm-buttons button, .download-buttons button { width: 150px; }
+
+    /* 新增結果顯示樣式 */
+    .analysis-summary {
+      text-align: left;
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .analysis-summary ul {
+      list-style: disc;
+      margin-left: 20px;
+    }
+    .analysis-model table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .analysis-model th, .analysis-model td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    .analysis-model th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>皮瓣血循分析工具</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <!-- 基本資料 -->
+      <div class="form-group">
+        <label for="patientID">病歷號：</label>
+        <input type="text" id="patientID" name="patientID" placeholder="請輸入病歷號" required>
+      </div>
+      <div class="form-group">
+        <label for="skinLabel"> 臨床判讀結果：</label>
+        <select id="skinLabel" name="skinLabel" required>
+          <option value="">請選擇</option>
+          <option value="Normal">Normal</option>
+          <option value="Arterial insufficiency">Arterial insufficiency</option>
+          <option value="Venous congestion"> Venous congestion</option>
+          <option value="尚未確定">尚未確定</option>
+        </select>
+      </div>
+      <!-- 手輸溫度欄位 -->
+      <div class="form-group">
+        <label for="flapTemp">Flap Temperature (°C):</label>
+        <input type="text" id="flapTemp" name="flapTemp" placeholder="請輸入 Flap 溫度" required>
+      </div>
+      <div class="form-group">
+        <label for="controlTemp">Control Temperature (°C):</label>
+        <input type="text" id="controlTemp" name="controlTemp" placeholder="請輸入 Control 溫度" required>
+      </div>
+      <!-- 上傳影像欄位 -->
+      <div class="form-group upload-group">
+        <div>
+          <label for="thermalFile">上傳熱影像：</label>
+          <!-- 熱影像取消必填 -->
+          <input type="file" id="thermalFile" name="thermalImage" accept="image/png, image/jpeg">
+        </div>
+        <div>
+          <label for="visibleFile">上傳 照片：</label>
+          <input type="file" id="visibleFile" name="visibleImage" accept="image/png, image/jpeg" required>
+        </div>
+      </div>
+      <!-- 隱藏欄位：存放選取區域座標 -->
+      <input type="hidden" id="regionThermal1" name="regionThermal1">
+      <input type="hidden" id="regionThermal2" name="regionThermal2">
+      <input type="hidden" id="regionNormal1" name="regionNormal1">
+      <input type="hidden" id="regionNormal2" name="regionNormal2">
+      
+      <!-- 影像顯示區 -->
+      <div class="image-comparison">
+        <!-- 熱影像區塊 -->
+        <div class="image-block">
+          <h3>熱影像（請框選兩個區域，供對比）</h3>
+          <canvas id="canvasThermal" style="display:none;"></canvas>
+          <div id="currentCoordsThermal" class="coords">尚未選取區域</div>
+          <div id="confirmedCoordsThermal">
+            <p id="confirmedThermalRegion1">熱影像區域1：尚未確認</p>
+            <p id="confirmedThermalRegion2">熱影像區域2：尚未確認</p>
+          </div>
+          <div class="confirm-buttons">
+            <button type="button" id="confirmRegion1Btn">確認熱影像區域1</button>
+            <button type="button" id="confirmRegion2Btn">確認熱影像區域2</button>
+          </div>
+          <div class="download-buttons">
+            <button type="button" id="downloadThermal1Btn" disabled>下載熱影像區域1</button>
+            <button type="button" id="downloadThermal2Btn" disabled>下載熱影像區域2</button>
+          </div>
+        </div>
+        <!-- 可見光區塊 -->
+        <div class="image-block">
+          <h3>照片（請框選兩個區域）</h3>
+          <canvas id="canvasNormal" style="display:none;"></canvas>
+          <div id="currentCoordsNormal" class="coords">尚未選取區域</div>
+          <div id="confirmedCoordsNormal">
+            <p id="confirmedNormalRegion1">Flap 區域：尚未確認</p>
+            <p id="confirmedNormalRegion2">Control 區域：尚未確認</p>
+          </div>
+          <div class="confirm-buttons">
+            <button type="button" id="confirmNormalRegion1Btn">確認 Flap 區域</button>
+            <button type="button" id="confirmNormalRegion2Btn">確認 Control 區域</button>
+          </div>
+          <div class="download-buttons">
+            <button type="button" id="downloadNormal1Btn" disabled>下載 Flap 區域</button>
+            <button type="button" id="downloadNormal2Btn" disabled>下載 Control 區域</button>
+          </div>
+        </div>
+      </div>
+      <!-- 功能按鈕 -->
+      <button type="button" id="analyzeBtn">分析</button>
+      <button type="button" id="saveLabelBtn">儲存 熱影像</button>
+      <button type="button" id="saveVisibleBtn">儲存 照片</button>
+      <!--button type="button" id="saveLogBtn">紀錄 log 檔</button-->
+
+    </form>
+    <div id="result" class="result-box"></div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    let thermalImage = new Image();
+    let visibleImage = new Image();
+    let isDraggingThermal = false, isDraggingVisible = false;
+    let thermalStartX = 0, thermalStartY = 0, thermalCurrentX = 0, thermalCurrentY = 0;
+    let visibleStartX = 0, visibleStartY = 0, visibleCurrentX = 0, visibleCurrentY = 0;
+    let thermalTempRegion = null, visibleTempRegion = null;
+    let thermalRegion1 = null, thermalRegion2 = null;
+    let visibleRegion1 = null, visibleRegion2 = null;
+    
+    // 取得 DOM 物件
+    const thermalFileInput = document.getElementById('thermalFile');
+    const canvasThermal = document.getElementById('canvasThermal');
+    const ctxThermal = canvasThermal.getContext('2d');
+    const currentCoordsThermalDiv = document.getElementById('currentCoordsThermal');
+    const confirmedThermalRegion1P = document.getElementById('confirmedThermalRegion1');
+    const confirmedThermalRegion2P = document.getElementById('confirmedThermalRegion2');
+    const confirmRegion1Btn = document.getElementById('confirmRegion1Btn');
+    const confirmRegion2Btn = document.getElementById('confirmRegion2Btn');
+    const regionThermalInput1 = document.getElementById('regionThermal1');
+    const regionThermalInput2 = document.getElementById('regionThermal2');
+    const downloadThermal1Btn = document.getElementById('downloadThermal1Btn');
+    const downloadThermal2Btn = document.getElementById('downloadThermal2Btn');
+    
+    const visibleFileInput = document.getElementById('visibleFile');
+    const canvasNormal = document.getElementById('canvasNormal');
+    const ctxNormal = canvasNormal.getContext('2d');
+    const currentCoordsNormalDiv = document.getElementById('currentCoordsNormal');
+    const confirmedNormalRegion1P = document.getElementById('confirmedNormalRegion1');
+    const confirmedNormalRegion2P = document.getElementById('confirmedNormalRegion2');
+    const confirmNormalRegion1Btn = document.getElementById('confirmNormalRegion1Btn');
+    const confirmNormalRegion2Btn = document.getElementById('confirmNormalRegion2Btn');
+    const regionNormalInput1 = document.getElementById('regionNormal1');
+    const regionNormalInput2 = document.getElementById('regionNormal2');
+    const downloadNormal1Btn = document.getElementById('downloadNormal1Btn');
+    const downloadNormal2Btn = document.getElementById('downloadNormal2Btn');
+    
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const saveLabelBtn = document.getElementById('saveLabelBtn');
+    const saveVisibleBtn = document.getElementById('saveVisibleBtn');
+    const saveLogBtn = document.getElementById('saveLogBtn');
+    
+    // 繪製矩形
+    function drawRect(ctx, x, y, w, h, color, mode = 'solid') {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash(mode === 'dashed' ? [5, 3] : []);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+    }
+    
+    function drawRectByRegion(ctx, region, displayCanvas, sourceImage, color) {
+  // region 已經是 canvas 座標，直接畫
+  const x = region.x1;
+  const y = region.y1;
+  const w = region.x2 - region.x1;
+  const h = region.y2 - region.y1;
+  drawRect(ctx, x, y, w, h, color, 'solid');
+}
+
+    
+    function redrawThermalCanvas() {
+      ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
+      ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
+      if (thermalRegion1) drawRectByRegion(ctxThermal, thermalRegion1, canvasThermal, thermalImage, 'blue');
+      if (thermalRegion2) drawRectByRegion(ctxThermal, thermalRegion2, canvasThermal, thermalImage, 'green');
+    }
+    
+    function redrawNormalCanvas() {
+      ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
+      ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
+      if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
+      if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
+    }
+    
+    function downloadImage(dataUrl, filename) {
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // 熱影像上傳與顯示
+    thermalFileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          thermalImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    thermalImage.onload = () => {
+      const parentWidth = canvasThermal.parentElement.clientWidth;
+      const scaleFactor = (thermalImage.width > parentWidth) ? parentWidth / thermalImage.width : 1;
+      canvasThermal.width = thermalImage.width * scaleFactor;
+      canvasThermal.height = thermalImage.height * scaleFactor;
+      canvasThermal.style.display = 'block';
+      ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
+      window.lastThermalImageDataUrl = thermalImage.src;
+    };
+    
+    // 可見光上傳與顯示
+    visibleFileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          visibleImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    visibleImage.onload = () => {
+      const parentWidth = canvasNormal.parentElement.clientWidth;
+      const scaleFactor = (visibleImage.width > parentWidth) ? parentWidth / visibleImage.width : 1;
+      canvasNormal.width = visibleImage.width * scaleFactor;
+      canvasNormal.height = visibleImage.height * scaleFactor;
+      canvasNormal.style.display = 'block';
+      ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
+      window.lastVisibleImageDataUrl = visibleImage.src;
+    };
+    
+    // 熱影像區域選取
+    canvasThermal.addEventListener('mousedown', (event) => {
+  const rect = canvasThermal.getBoundingClientRect();
+  const scaleX = canvasThermal.width / rect.width;
+  const scaleY = canvasThermal.height / rect.height;
+  thermalStartX = (event.clientX - rect.left) * scaleX;
+  thermalStartY = (event.clientY - rect.top) * scaleY;
+  isDraggingThermal = true;
+});
+
+canvasThermal.addEventListener('mousemove', (event) => {
+  if (!isDraggingThermal) return;
+  const rect = canvasThermal.getBoundingClientRect();
+  const scaleX = canvasThermal.width / rect.width;
+  const scaleY = canvasThermal.height / rect.height;
+  thermalCurrentX = (event.clientX - rect.left) * scaleX;
+  thermalCurrentY = (event.clientY - rect.top) * scaleY;
+
+  ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
+  ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
+  if (thermalRegion1) drawRectByRegion(ctxThermal, thermalRegion1, canvasThermal, thermalImage, 'blue');
+  if (thermalRegion2) drawRectByRegion(ctxThermal, thermalRegion2, canvasThermal, thermalImage, 'green');
+
+  let x1 = Math.min(thermalStartX, thermalCurrentX);
+  let y1 = Math.min(thermalStartY, thermalCurrentY);
+  let w = Math.abs(thermalCurrentX - thermalStartX);
+  let h = Math.abs(thermalCurrentY - thermalStartY);
+  drawRect(ctxThermal, x1, y1, w, h, 'red', 'dashed');
+
+  thermalTempRegion = {
+    x1: x1,
+    y1: y1,
+    x2: x1 + w,
+    y2: y1 + h
+  };
+  currentCoordsThermalDiv.innerText = `目前選取：(${x1.toFixed(0)}, ${y1.toFixed(0)}) ~ (${(x1 + w).toFixed(0)}, ${(y1 + h).toFixed(0)})`;
+});
+
+    
+    canvasThermal.addEventListener('mouseup', () => { isDraggingThermal = false; });
+    canvasThermal.addEventListener('mouseleave', () => { if (isDraggingThermal) isDraggingThermal = false; });
+    
+    confirmRegion1Btn.addEventListener('click', () => {
+      if (!thermalTempRegion) {
+        alert("請先框選熱影像區域1");
+        return;
+      }
+      thermalRegion1 = thermalTempRegion;
+      regionThermalInput1.value = `${thermalRegion1.x1},${thermalRegion1.y1},${thermalRegion1.x2},${thermalRegion1.y2}`;
+      alert("熱影像區域1已確認");
+      confirmedThermalRegion1P.innerText = `熱影像區域1：(${thermalRegion1.x1.toFixed(0)}, ${thermalRegion1.y1.toFixed(0)}) ~ (${thermalRegion1.x2.toFixed(0)}, ${thermalRegion1.y2.toFixed(0)})`;
+      downloadThermal1Btn.disabled = false;
+      redrawThermalCanvas();
+    });
+    
+    confirmRegion2Btn.addEventListener('click', () => {
+      if (!thermalTempRegion) {
+        alert("請先框選熱影像區域2");
+        return;
+      }
+      thermalRegion2 = thermalTempRegion;
+      regionThermalInput2.value = `${thermalRegion2.x1},${thermalRegion2.y1},${thermalRegion2.x2},${thermalRegion2.y2}`;
+      alert("熱影像區域2已確認");
+      confirmedThermalRegion2P.innerText = `熱影像區域2：(${thermalRegion2.x1.toFixed(0)}, ${thermalRegion2.y1.toFixed(0)}) ~ (${thermalRegion2.x2.toFixed(0)}, ${thermalRegion2.y2.toFixed(0)})`;
+      downloadThermal2Btn.disabled = false;
+      redrawThermalCanvas();
+    });
+    // 手機熱影像觸控
+canvasThermal.addEventListener('touchstart', (event) => {
+  event.preventDefault();
+  const rect = canvasThermal.getBoundingClientRect();
+  const touch = event.touches[0];
+  thermalStartX = touch.clientX - rect.left;
+  thermalStartY = touch.clientY - rect.top;
+  isDraggingThermal = true;
+});
+
+canvasThermal.addEventListener('touchmove', (event) => {
+  event.preventDefault();
+  if (!isDraggingThermal) return;
+  const rect = canvasThermal.getBoundingClientRect();
+  const touch = event.touches[0];
+  thermalCurrentX = touch.clientX - rect.left;
+  thermalCurrentY = touch.clientY - rect.top;
+  ctxThermal.clearRect(0, 0, canvasThermal.width, canvasThermal.height);
+  ctxThermal.drawImage(thermalImage, 0, 0, canvasThermal.width, canvasThermal.height);
+  if (thermalRegion1) drawRectByRegion(ctxThermal, thermalRegion1, canvasThermal, thermalImage, 'blue');
+  if (thermalRegion2) drawRectByRegion(ctxThermal, thermalRegion2, canvasThermal, thermalImage, 'green');
+  let x1 = Math.min(thermalStartX, thermalCurrentX);
+  let y1 = Math.min(thermalStartY, thermalCurrentY);
+  let w = Math.abs(thermalCurrentX - thermalStartX);
+  let h = Math.abs(thermalCurrentY - thermalStartY);
+  drawRect(ctxThermal, x1, y1, w, h, 'red', 'dashed');
+  const scaleX = thermalImage.width / canvasThermal.width;
+  const scaleY = thermalImage.height / canvasThermal.height;
+  thermalTempRegion = {
+    x1: x1 * scaleX,
+    y1: y1 * scaleY,
+    x2: (x1 + w) * scaleX,
+    y2: (y1 + h) * scaleY
+  };
+  currentCoordsThermalDiv.innerText = `目前選取：(${thermalTempRegion.x1.toFixed(0)}, ${thermalTempRegion.y1.toFixed(0)}) ~ (${thermalTempRegion.x2.toFixed(0)}, ${thermalTempRegion.y2.toFixed(0)})`;
+});
+
+canvasThermal.addEventListener('touchend', (event) => {
+  event.preventDefault();
+  isDraggingThermal = false;
+});
+
+    // 可見光區域選取
+    canvasNormal.addEventListener('mousedown', (event) => {
+  const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
+  visibleStartX = (event.clientX - rect.left) * scaleX;
+  visibleStartY = (event.clientY - rect.top) * scaleY;
+  isDraggingVisible = true;
+});
+
+canvasNormal.addEventListener('mousemove', (event) => {
+  if (!isDraggingVisible) return;
+  const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
+  visibleCurrentX = (event.clientX - rect.left) * scaleX;
+  visibleCurrentY = (event.clientY - rect.top) * scaleY;
+
+  ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
+  ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
+  if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
+  if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
+
+  let x1 = Math.min(visibleStartX, visibleCurrentX);
+  let y1 = Math.min(visibleStartY, visibleCurrentY);
+  let w = Math.abs(visibleCurrentX - visibleStartX);
+  let h = Math.abs(visibleCurrentY - visibleStartY);
+  drawRect(ctxNormal, x1, y1, w, h, 'red', 'dashed');
+
+  visibleTempRegion = {
+    x1: x1,
+    y1: y1,
+    x2: x1 + w,
+    y2: y1 + h
+  };
+  currentCoordsNormalDiv.innerText = `目前選取：(${x1.toFixed(0)}, ${y1.toFixed(0)}) ~ (${(x1 + w).toFixed(0)}, ${(y1 + h).toFixed(0)})`;
+});
+
+    
+    canvasNormal.addEventListener('mouseup', () => { isDraggingVisible = false; });
+    canvasNormal.addEventListener('mouseleave', () => { if (isDraggingVisible) isDraggingVisible = false; });
+    
+    confirmNormalRegion1Btn.addEventListener('click', () => {
+      if (!visibleTempRegion) {
+        alert("請先框選 Flap 區域");
+        return;
+      }
+      visibleRegion1 = visibleTempRegion;
+      regionNormalInput1.value = `${visibleRegion1.x1},${visibleRegion1.y1},${visibleRegion1.x2},${visibleRegion1.y2}`;
+      alert("Flap 區域已確認");
+      confirmedNormalRegion1P.innerText = `Flap 區域：(${visibleRegion1.x1.toFixed(0)}, ${visibleRegion1.y1.toFixed(0)}) ~ (${visibleRegion1.x2.toFixed(0)}, ${visibleRegion1.y2.toFixed(0)})`;
+      downloadNormal1Btn.disabled = false;
+      redrawNormalCanvas();
+    });
+   // 手機可見光觸控
+   canvasNormal.addEventListener('touchstart', (event) => {
+  event.preventDefault();
+  const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
+  const touch = event.touches[0];
+  visibleStartX = (touch.clientX - rect.left) * scaleX;
+  visibleStartY = (touch.clientY - rect.top) * scaleY;
+  isDraggingVisible = true;
+});
+
+canvasNormal.addEventListener('touchmove', (event) => {
+  event.preventDefault();
+  if (!isDraggingVisible) return;
+  const rect = canvasNormal.getBoundingClientRect();
+  const scaleX = canvasNormal.width / rect.width;
+  const scaleY = canvasNormal.height / rect.height;
+  const touch = event.touches[0];
+  visibleCurrentX = (touch.clientX - rect.left) * scaleX;
+  visibleCurrentY = (touch.clientY - rect.top) * scaleY;
+
+  ctxNormal.clearRect(0, 0, canvasNormal.width, canvasNormal.height);
+  ctxNormal.drawImage(visibleImage, 0, 0, canvasNormal.width, canvasNormal.height);
+  if (visibleRegion1) drawRectByRegion(ctxNormal, visibleRegion1, canvasNormal, visibleImage, 'blue');
+  if (visibleRegion2) drawRectByRegion(ctxNormal, visibleRegion2, canvasNormal, visibleImage, 'blue');
+
+  let x1 = Math.min(visibleStartX, visibleCurrentX);
+  let y1 = Math.min(visibleStartY, visibleCurrentY);
+  let w = Math.abs(visibleCurrentX - visibleStartX);
+  let h = Math.abs(visibleCurrentY - visibleStartY);
+  drawRect(ctxNormal, x1, y1, w, h, 'red', 'dashed');
+
+  visibleTempRegion = {
+    x1: x1,
+    y1: y1,
+    x2: x1 + w,
+    y2: y1 + h
+  };
+  currentCoordsNormalDiv.innerText = `目前選取：(${x1.toFixed(0)}, ${y1.toFixed(0)}) ~ (${(x1 + w).toFixed(0)}, ${(y1 + h).toFixed(0)})`;
+});
+
+
+canvasNormal.addEventListener('touchend', (event) => {
+  event.preventDefault();
+  isDraggingVisible = false;
+});
+ 
+    confirmNormalRegion2Btn.addEventListener('click', () => {
+      if (!visibleTempRegion) {
+        alert("請先框選 Control 區域");
+        return;
+      }
+      visibleRegion2 = visibleTempRegion;
+      regionNormalInput2.value = `${visibleRegion2.x1},${visibleRegion2.y1},${visibleRegion2.x2},${visibleRegion2.y2}`;
+      alert("Control 區域已確認");
+      confirmedNormalRegion2P.innerText = `Control 區域：(${visibleRegion2.x1.toFixed(0)}, ${visibleRegion2.y1.toFixed(0)}) ~ (${visibleRegion2.x2.toFixed(0)}, ${visibleRegion2.y2.toFixed(0)})`;
+      downloadNormal2Btn.disabled = false;
+      redrawNormalCanvas();
+    });
+    
+    // 分析按鈕：發送表單並顯示後端回傳的結果，包括多模型預測
+    analyzeBtn.addEventListener('click', () => {
+      if (!visibleFileInput.files.length) {
+        alert("請上傳照片影像檔案！");
+        return;
+      }
+      if (!regionNormalInput1.value || !regionNormalInput2.value) {
+        alert("請確認照片區域！");
+        return;
+      }
+      const patientID = document.getElementById('patientID').value.trim();
+      const skinLabel = document.getElementById('skinLabel').value;
+      const flapTemp = document.getElementById('flapTemp').value.trim();
+      const controlTemp = document.getElementById('controlTemp').value.trim();
+      if (!patientID || !flapTemp || !controlTemp) {
+        alert("請輸入病歷號及溫度！");
+        return;
+      }
+      const form = document.getElementById('uploadForm');
+      const formData = new FormData(form);
+      if (thermalFileInput.files.length) {
+        formData.append('thermalImage', thermalFileInput.files[0]);
+      }
+      if (visibleFileInput.files.length) {
+        formData.append('visibleImage', visibleFileInput.files[0]);
+      }
+    
+      fetch("https://cgmhflap.com/upload", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        
+  if (data.error) {
+    alert("分析失敗：" + data.error);
+  } else {
+    let resultHTML = `
+      <div class="analysis-summary">
+        <h3>基本結果</h3>
+        <ul>
+          <li><strong>Flap RGB:</strong> R: ${data.flap_rgb[0].toFixed(2)}, G: ${data.flap_rgb[1].toFixed(2)}, B: ${data.flap_rgb[2].toFixed(2)}</li>
+          <li><strong>Flap Temperature:</strong> ${data.flapTemp} °C</li>
+          <li><strong>Control Temperature:</strong> ${data.controlTemp} °C</li>
+          <li><strong>預測結果:</strong> ${data.prediction}</li>
+        </ul>
+      </div>
+      <div class="analysis-model">
+        <h3>RF2 模型機率分布</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>分類</th>
+              <th>機率</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Normal Flap</td>
+              <td>${data.probabilities["Normal Flap"]}</td>
+            </tr>
+            <tr>
+              <td>Arterial insufficiency</td>
+              <td>${data.probabilities["Arterial insufficiency"]}</td>
+            </tr>
+            <tr>
+              <td>Venous insufficiency</td>
+              <td>${data.probabilities["Venous insufficiency"]}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    document.getElementById('result').innerHTML = resultHTML;
+
+      // 補上隱藏欄位傳送到 /save_log
+      const form = document.getElementById('uploadForm');
+
+      // 防止重複欄位：先刪除已存在的
+      ['aiPrediction', 'flapRGB', 'controlRGB'].forEach(id => {
+        const existing = form.querySelector(`input[name="${id}"]`);
+        if (existing) existing.remove();
+      });
+
+      // 插入最新分析結果為 hidden input
+      form.insertAdjacentHTML('beforeend', `<input type="hidden" name="aiPrediction" value="${data.prediction}">`);
+      form.insertAdjacentHTML('beforeend', `<input type="hidden" name="flapRGB" value="[${data.flap_rgb.map(x => x.toFixed(2)).join(', ')}]">`);
+      form.insertAdjacentHTML('beforeend', `<input type="hidden" name="controlRGB" value="[${data.control_rgb.map(x => x.toFixed(2)).join(', ')}]">`);
+
+  }
+        // 保持圖片不重置
+        if (window.lastVisibleImageDataUrl) {
+          visibleImage.src = window.lastVisibleImageDataUrl;
+        }
+        if (window.lastThermalImageDataUrl) {
+          thermalImage.src = window.lastThermalImageDataUrl;
+        }
+      })
+      .catch(error => {
+        console.error('分析錯誤:', error);
+        alert("分析時發生錯誤：" + error.message);
+      });
+    });
+      
+    saveLabelBtn.addEventListener('click', () => {
+      const patientID = document.getElementById('patientID').value.trim();
+      const skinLabel = document.getElementById('skinLabel').value;
+      if (!thermalFileInput.files.length) {
+        alert("請先上傳熱影像檔案！");
+        return;
+      }
+      if (!patientID) {
+        alert("請輸入病歷號！");
+        return;
+      }
+      if (!skinLabel || !["Normal", "Arterial insufficiency", "Venous congestion", "尚未確定"].includes(skinLabel)) {
+        alert("請選擇有效的皮膚 Label！");
+        return;
+      }
+      const formData = new FormData();
+      formData.append('patientID', patientID);
+      formData.append('skinLabel', skinLabel);
+      formData.append('thermalImage', thermalFileInput.files[0]);
+      if (visibleFileInput.files.length) {
+        formData.append('visibleImage', visibleFileInput.files[0]);
+      }
+      
+      fetch("https://cgmhflap.com/save_label", {
+        method: "POST",
+        mode: "cors",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          alert(`${data.message}\n檔案儲存路徑：${data.path}`);
+        } else if (data.error) {
+          alert(`儲存失敗：${data.error}`);
+        }
+      })
+      .catch(error => {
+        console.error("儲存時發生錯誤：", error);
+        alert("儲存 熱影像 時發生錯誤！");
+      });
+    });
+      
+    // 儲存可見光影像
+    saveVisibleBtn.addEventListener('click', () => {
+      const patientID = document.getElementById('patientID').value.trim();
+      const skinLabel = document.getElementById('skinLabel').value;
+      if (!visibleFileInput.files.length) {
+        alert("請先上傳照片檔案！");
+        return;
+      }
+      if (!patientID) {
+        alert("請輸入病歷號！");
+        return;
+      }
+      if (!skinLabel || !["Normal", "Arterial insufficiency", "Venous congestion", "尚未確定"].includes(skinLabel)) {
+        alert("請選擇有效的皮膚 Label！");
+        return;
+      }
+      const formData = new FormData();
+      formData.append('patientID', patientID);
+      formData.append('skinLabel', skinLabel);
+      formData.append('visibleImage', visibleFileInput.files[0]);
+  
+      fetch("https://cgmhflap.com/save_visible", {
+        method: "POST",
+        mode: "cors",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          alert(`${data.message}\n檔案儲存路徑：${data.path}`);
+        } else if (data.error) {
+          alert(`儲存失敗：${data.error}`);
+        }
+      })
+      .catch(error => {
+        console.error("儲存時發生錯誤：", error);
+        alert("儲存 照片 時發生錯誤！");
+      });
+    });
+    
+    saveLogBtn.addEventListener('click', () => {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData(form);
+
+    fetch("/save_log", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message) {
+          alert(data.message + "\n檔案路徑：" + data.path);
+        } else {
+          alert("儲存失敗：" + data.error);
+        }
+      })
+      .catch(err => {
+        console.error("儲存 log 發生錯誤：", err);
+        alert("發生錯誤：" + err.message);
+      });
+    });
+
+    // 下載區域影像 (示範熱影像與可見光區域下載)
+    downloadThermal1Btn.addEventListener('click', () => {
+      if (!regionThermalInput1.value) {
+        alert("請先確認熱影像區域1");
+        return;
+      }
+      fetch(`https://cgmhflap.com/download_region?type=thermal&region=1`, {
+        method: "GET"
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        downloadImage(url, `thermal_region1_${Date.now()}.jpg`);
+      })
+      .catch(error => {
+        console.error('下載錯誤:', error);
+        alert("下載熱影像區域1失敗：" + error.message);
+      });
+    });
+      
+    downloadThermal2Btn.addEventListener('click', () => {
+      if (!regionThermalInput2.value) {
+        alert("請先確認熱影像區域2");
+        return;
+      }
+      fetch(`https://cgmhflap.com/download_region?type=thermal&region=2`, {
+        method: "GET"
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        downloadImage(url, `thermal_region2_${Date.now()}.jpg`);
+      })
+      .catch(error => {
+        console.error('下載錯誤:', error);
+        alert("下載熱影像區域2失敗：" + error.message);
+      });
+    });
+      
+    downloadNormal1Btn.addEventListener('click', () => {
+      if (!regionNormalInput1.value) {
+        alert("請先確認 Flap 區域");
+        return;
+      }
+      fetch(`https://cgmhflap.com/download_region?type=visible&region=1`, {
+        method: "GET"
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        downloadImage(url, `flap_region_${Date.now()}.jpg`);
+      })
+      .catch(error => {
+        console.error('下載錯誤:', error);
+        alert("下載 Flap 區域失敗：" + error.message);
+      });
+    });
+      
+    downloadNormal2Btn.addEventListener('click', () => {
+      if (!regionNormalInput2.value) {
+        alert("請先確認 Control 區域");
+        return;
+      }
+      fetch(`https://cgmhflap.com/download_region?type=visible&region=2`, {
+        method: "GET"
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        downloadImage(url, `control_region_${Date.now()}.jpg`);
+      })
+      .catch(error => {
+        console.error('下載錯誤:', error);
+        alert("下載 Control 區域失敗：" + error.message);
+      });
+    });
+  });
+  </script>
+</body>
+</html>
