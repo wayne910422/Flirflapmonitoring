@@ -15,6 +15,13 @@
 - 原本規劃開發成手機應用程式（App），但經評估後考量到後續的維護便利性與跨平台兼容性，決定改為開發基於瀏覽器的網站系統。網站平台具有較佳的擴充性與遠端維運優勢，並能更有效整合雲端資源。  
 - 分析功能：  
 - 使用者上傳影像資料（熱影像與一般照片）後，系統會自動擷取指定點位的溫度與RGB資訊，並結合Random Forest模型進行分析，輸出model analysis之結果與檔案命名。
+測試附圖:
+
+![image](https://github.com/user-attachments/assets/b012aa39-aacd-4f7d-929f-7a68a90b7c83)
+
+指定點位附圖:
+
+![image](https://github.com/user-attachments/assets/a10400c1-c139-4c44-bbc1-a08dd2b1270a)
 
 4. AWS 上架與部署:
 - 將整體網站部署於 AWS 雲端平台，採用以下架構：  
