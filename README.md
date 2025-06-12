@@ -28,4 +28,6 @@
 6.安全性與資料儲存:
 - 整體資料傳輸透過HTTPS確保安全性
 - EC2 掛載GOOGLE雲端硬碟 使病例直接分類的最後的存儲位置
+![image](https://github.com/user-attachments/assets/a6776bee-5e1f-4b0b-b51e-8ce7f39391f2)
+
 
